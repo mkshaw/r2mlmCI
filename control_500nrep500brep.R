@@ -5,7 +5,6 @@ tictoc::tic()
 # modelling dependencies
 library(r2mlm)
 library(DescTools) # for confidence intervals
-library(lmeresampler) # for bootstrapping
 library(bootmlm) # for bootstrapping
 library(magrittr) # for pipe
 library(glue) # for printing coverage intervals
@@ -22,7 +21,7 @@ library(covsim) # non-normal errors
 
 # Manipulated study conditions
 C.cond <- c(30, 100, 200) # number of clusters
-N.cond <- c(4, 25, 100) # cluster size
+N.cond <- c(25, 100) # cluster size
 norm.cond <- c("normal", "nonnormal") # error normality
 
 # Fixed conditions
@@ -152,10 +151,10 @@ v  <- popr2s[3, 1]
 m  <- popr2s[4, 1]
 
 # coverage iterations
-nrep <- 500
+nrep <- 10
 
 # bootstrap iterations
-brep <- 500
+brep <- 5
 
 # model
 form <- formula(satisfaction ~ 1 + x1 + x2 + x3 + z1 + z2 + z3 + (1 + x1 + x2 + x3|schoolID))
@@ -289,27 +288,24 @@ for (C in C.cond) {
         
         # bootstrap datasets
         mod <- lmer(form, dat, control = lmerControl(optimizer = "bobyqa"))
-        mod <- lmer(form, dat, control = lmerControl(optimizer = "bobyqa"))
-        # boopar <- lmeresampler::bootstrap(model = mod, .f = r2s, type = "parametric", B = brep)
         boopar <- bootstrap_mer(x = mod,
                                 FUN = r2s,
                                 nsim = brep,
                                 type = c("parametric"))
-        # boores <- lmeresampler::bootstrap(model = mod, .f = r2s, type = "residual", B = brep)
         boores <- bootstrap_mer(x = mod,
                                 FUN = r2s,
                                 nsim = brep,
                                 type = c("residual"))
         
         # get confidence intervals and store them
-        confints_par_norm <- rbind(confints_par_norm, confint(boopar, type = "norm")[, c("lower", "upper")])
-        confints_res_norm <- rbind(confints_res_norm, confint(boores, type = "norm")[, c("lower", "upper")])
+        confints_par_norm <- rbind(confints_par_norm, confint(boopar, type = "norm"))
+        confints_res_norm <- rbind(confints_res_norm, confint(boores, type = "norm"))
         
-        confints_par_basic <- rbind(confints_par_basic, confint(boopar, type = "basic")[, c("lower", "upper")])
-        confints_res_basic <- rbind(confints_res_basic, confint(boores, type = "basic")[, c("lower", "upper")])
+        confints_par_basic <- rbind(confints_par_basic, confint(boopar, type = "basic"))
+        confints_res_basic <- rbind(confints_res_basic, confint(boores, type = "basic"))
         
-        confints_par_perc <- rbind(confints_par_perc, confint(boopar, type = "perc")[, c("lower", "upper")])
-        confints_res_perc <- rbind(confints_res_perc, confint(boores, type = "perc")[, c("lower", "upper")])
+        confints_par_perc <- rbind(confints_par_perc, confint(boopar, type = "perc"))
+        confints_res_perc <- rbind(confints_res_perc, confint(boores, type = "perc"))
         
       }
       
