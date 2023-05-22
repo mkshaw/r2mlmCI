@@ -21,13 +21,41 @@ library(covsim) # non-normal errors
 
 # Manipulated study conditions
 C.cond <- c(30, 100, 200) # number of clusters
-N.cond <- c(25, 100) # cluster size
+N.cond <- c(6, 25, 100) # cluster size
 norm.cond <- c("normal", "nonnormal") # error normality
 
 # Fixed conditions
 # data generation
 #fixed component of intercept
-gamma00 <- 10
+# gamma00 <- 10
+# 
+# #fixed components of level-2 variables
+# gamma01 <- -1.5
+# gamma02 <- -1.5
+# gamma03 <- -1.5
+# 
+# #fixed component of level-1 variables
+# gamma10 <- 1.5
+# gamma20 <- 1.5
+# gamma30 <- 1.5
+# 
+# ##random effect (co)variances
+# tau00 <- 3.0
+# tau11 <- 1.0
+# tau22 <- 1.0
+# tau33 <- 1.0
+# tau01 <- tau02 <- tau03 <- tau12 <- tau13 <- tau23 <- 0
+# 
+# Tau <- matrix(c(tau00, tau01, tau02, tau03,
+#                 tau01, tau11, tau12, tau13,
+#                 tau02, tau12, tau22, tau23,
+#                 tau03, tau13, tau23, tau33), 4, 4)
+# sigma2 <- 3.5
+
+# Data generation -- near-zero R2s
+# Fixed conditions
+#fixed component of intercept
+gamma00 <- 4
 
 #fixed components of level-2 variables
 gamma01 <- -1.5
@@ -40,17 +68,17 @@ gamma20 <- 1.5
 gamma30 <- 1.5
 
 ##random effect (co)variances
-tau00 <- 1.5
-tau11 <- 1.0
-tau22 <- 1.0
-tau33 <- 1.0
+tau00 <- 0.5
+tau11 <- 0.5
+tau22 <- 0.5
+tau33 <- 0.5
 tau01 <- tau02 <- tau03 <- tau12 <- tau13 <- tau23 <- 0
 
 Tau <- matrix(c(tau00, tau01, tau02, tau03,
                 tau01, tau11, tau12, tau13,
                 tau02, tau12, tau22, tau23,
                 tau03, tau13, tau23, tau33), 4, 4)
-sigma2 <- 3.5
+sigma2 <- 0.5
 
 # population R2s
 ##arguments:
@@ -151,10 +179,10 @@ v  <- popr2s[3, 1]
 m  <- popr2s[4, 1]
 
 # coverage iterations
-nrep <- 10
+nrep <- 500
 
 # bootstrap iterations
-brep <- 5
+brep <- 500
 
 # model
 form <- formula(satisfaction ~ 1 + x1 + x2 + x3 + z1 + z2 + z3 + (1 + x1 + x2 + x3|schoolID))
