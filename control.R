@@ -23,37 +23,6 @@ library(covsim) # non-normal errors
 # C.cond <- c(30, 100, 200) # number of clusters
 # N.cond <- c(6, 25, 70) # cluster size
 # norm.cond <- c("normal", "nonnormal") # error normality
-C.cond <- c(30) # number of clusters
-N.cond <- c(6) # cluster size
-norm.cond <- c("normal", "nonnormal") # error normality
-
-# Fixed conditions
-# data generation
-#fixed component of intercept
-# gamma00 <- 10
-# 
-# #fixed components of level-2 variables
-# gamma01 <- -1.5
-# gamma02 <- -1.5
-# gamma03 <- -1.5
-# 
-# #fixed component of level-1 variables
-# gamma10 <- 1.5
-# gamma20 <- 1.5
-# gamma30 <- 1.5
-# 
-# ##random effect (co)variances
-# tau00 <- 3.0
-# tau11 <- 1.0
-# tau22 <- 1.0
-# tau33 <- 1.0
-# tau01 <- tau02 <- tau03 <- tau12 <- tau13 <- tau23 <- 0
-# 
-# Tau <- matrix(c(tau00, tau01, tau02, tau03,
-#                 tau01, tau11, tau12, tau13,
-#                 tau02, tau12, tau22, tau23,
-#                 tau03, tau13, tau23, tau33), 4, 4)
-# sigma2 <- 3.5
 
 # Data generation -- near-zero R2s
 # Fixed conditions
@@ -198,31 +167,12 @@ set.seed(1996)
 #satisfaction <- gamma00 + gamma01*z1 + gamma02*z2 + gamma03*z3 + gamma10*x1 + gamma20*x2 + gamma30*x3 + u0j + u1j*x1 + u2j*x2 + u3j*x3 + eij
 create_df <- function(C, N, norm) {
   
-  #fixed component of intercept
-  gamma00 <- gamma00
-  
-  #fixed component of level-2 variables
-  gamma01 <- gamma01
-  gamma02 <- gamma02
-  gamma03 <- gamma03
-  
-  #fixed component of level-1 variables
-  gamma10 <- gamma10
-  gamma20 <- gamma20
-  gamma30 <- gamma30
-  
-  ##random effect (co)variances
-  tau00 <- tau00
-  tau11 <- tau11
-  tau22 <- tau22
-  tau33 <- tau33
-  # covariances are defined above in fixed conditions section
+  # fixed and random effects are already defined
   
   Tau <- matrix(c(tau00, tau01, tau02, tau03,
                   tau01, tau11, tau12, tau13,
                   tau02, tau12, tau22, tau23,
                   tau03, tau13, tau23, tau33), 4, 4)
-  sigma2 <- sigma2
   
   #set sample size
   clusters <- C
@@ -247,7 +197,7 @@ create_df <- function(C, N, norm) {
   #generate errors by normality condition
   if (norm == "normal") {
     teachsat[,"eij"] <- rnorm(clusters*clustersize, 0, sqrt(sigma2))
-    randomeffects <- mvrnorm(clusters, c(0, 0, 0, 0), Tau)
+    randomeffects <- rockchalk::mvrnorm(clusters, c(0, 0, 0, 0), Tau)
     teachsat[,"u0j"] <- rep(randomeffects[,1], each=clustersize)
     teachsat[,"u1j"] <- rep(randomeffects[,2], each=clustersize) 
     teachsat[,"u2j"] <- rep(randomeffects[,3], each=clustersize) 
@@ -256,17 +206,17 @@ create_df <- function(C, N, norm) {
     sk <- 2
     kurt <- 7
     obs <- clusters*clustersize
-    teachsat[,"eij"] <- rIG(obs, as.matrix(sigma2), sk, kurt, 1)[[1]]
-    teachsat[,"u0j"] <- rep(rIG(clusters, as.matrix(tau00), sk, kurt, 1)[[1]], each = clustersize)
-    teachsat[,"u1j"] <- rep(rIG(clusters, as.matrix(tau11), sk, kurt, 1)[[1]], each = clustersize)
-    teachsat[,"u2j"] <- rep(rIG(clusters, as.matrix(tau22), sk, kurt, 1)[[1]], each = clustersize)
-    teachsat[,"u3j"] <- rep(rIG(clusters, as.matrix(tau33), sk, kurt, 1)[[1]], each = clustersize)
+    teachsat[,"eij"] <- covsim::rIG(obs, as.matrix(sigma2), sk, kurt, 1)[[1]]
+    teachsat[,"u0j"] <- rep(covsim::rIG(clusters, as.matrix(tau00), sk, kurt, 1)[[1]], each = clustersize)
+    teachsat[,"u1j"] <- rep(covsim::rIG(clusters, as.matrix(tau11), sk, kurt, 1)[[1]], each = clustersize)
+    teachsat[,"u2j"] <- rep(covsim::rIG(clusters, as.matrix(tau22), sk, kurt, 1)[[1]], each = clustersize)
+    teachsat[,"u3j"] <- rep(covsim::rIG(clusters, as.matrix(tau33), sk, kurt, 1)[[1]], each = clustersize)
   } else {
     print("something went wrong with the error normality")
   }
   
   #group-mean-center level-1 vars
-  teachsat <- gmc(teachsat, c("x1", "x2", "x3"), "schoolID")
+  teachsat <- rockchalk::gmc(teachsat, c("x1", "x2", "x3"), "schoolID")
   teachsat$x1 <- teachsat$x1_dev
   teachsat$x2 <- teachsat$x2_dev
   teachsat$x3 <- teachsat$x3_dev
@@ -300,9 +250,10 @@ r2s <- function(.) {
 
 results <- matrix(numeric(), nrow = 0, ncol = 10)
 
-for (C in C.cond) {
-  for (N in N.cond) {
-    for (norm in norm.cond) {
+simulation <- function(C, N, norm, 
+                       gamma00, gamma01, gamma02, gamma03, gamma10, gamma20, gamma30,
+                       tau00, tau01, tau02, tau03, tau11, tau12, tau13, tau22, tau23, tau33,
+                       sigma2) {
       
       # nonconvergence tally
       nonconvergence = 0
@@ -321,7 +272,7 @@ for (C in C.cond) {
         dat <- create_df(C, N, norm)
         
         # bootstrap datasets
-        mod <- lmer(form, dat, control = lmerControl(optimizer = "bobyqa"))
+        mod <- lme4::lmer(form, dat, control = lmerControl(optimizer = "bobyqa"))
         
         # if non-convergence, then add to tally and clear warnings (because we're checking non-convergence by length of warnings())
         # if the model converged, then we conduct bootstrapping and get confidence intervals
@@ -330,11 +281,11 @@ for (C in C.cond) {
           print("Nonconvergence added to tally")
           assign("last.warning", NULL, envir = baseenv())
         } else {
-          boopar <- bootstrap_mer(x = mod,
+          boopar <- bootmlm::bootstrap_mer(x = mod,
                                   FUN = r2s,
                                   nsim = brep,
                                   type = c("parametric"))
-          boores <- bootstrap_mer(x = mod,
+          boores <- bootmlm::bootstrap_mer(x = mod,
                                   FUN = r2s,
                                   nsim = brep,
                                   type = c("residual"))
@@ -352,9 +303,6 @@ for (C in C.cond) {
           # remove warnings about confints
           assign("last.warning", NULL, envir = baseenv())
         }
-        
-        # print statement for progress updates
-        print(glue("Completed iteration number {r} out of {nrep}"))
         
       }
       
@@ -576,16 +524,35 @@ for (C in C.cond) {
       outpar_basic <- c(C, N, norm, "parametric", "basic", f1pb, f2pb, vpb, mpb, converged_rep)
       outres_basic <- c(C, N, norm, "residual", "basic", f1rb, f2rb, vrb, mrb, converged_rep)
       
-      
-      # bind to results
-      results <- rbind(results, outpar_norm, outres_norm, outpar_perc, outres_perc, outpar_basic, outres_basic)
-      print(results)
-    }
-  }
 }
+
+# specify number of clusters for sim
+library(doParallel)
+library(foreach)
+cl <- makeCluster(2)
+registerDoParallel(cl)
+
+tmp <- foreach(C = c(30, 100, 200), .packages = c("magrittr", "lme4", "r2mlm")) %:% foreach(N = c(6, 25, 70)) %:% foreach(norm = c("normal", "nonnormal")) %dopar% {
+  simulation(C, N, norm,
+             gamma00, gamma01, gamma02, gamma03, gamma10, gamma20, gamma30,
+             tau00, tau01, tau02, tau03, tau11, tau12, tau13, tau22, tau23, tau33,
+             sigma2)
+}
+
+# FOR TESTING PURPOSES
+# tmp <- foreach(C = 30, .packages = c("magrittr", "lme4", "r2mlm")) %:% foreach(N = 6) %:% foreach(norm = c("normal", "nonnormal")) %dopar% {
+#   simulation(C, N, norm,
+#              gamma00, gamma01, gamma02, gamma03, gamma10, gamma20, gamma30,
+#              tau00, tau01, tau02, tau03, tau11, tau12, tau13, tau22, tau23, tau33,
+#              sigma2)
+# }
+
+
+results <- do.call(rbind, unlist(unlist(tmp, recursive = F), recursive = F))
 
 # Clean up results
 colnames(results) <- c("C", "N", "norm", "boottype", "CI", "f1cov", "f2cov", "vcov", "mcov", "converged_reps")
+rownames(results) <- NULL
 
 results <- as.data.frame(results)
 results <- results %>% 

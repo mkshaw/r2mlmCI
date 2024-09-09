@@ -1,0 +1,7 @@
+"","C","N","norm","boottype","CI","f1cov","f2cov","vcov","mcov","converged_reps","averagecov","nonconverge_prop"
+"outpar_norm",30,25,"normal","parametric","norm",0.896,0.846,0.908,0.878,"500",0.882,0
+"outres_norm",30,25,"normal","residual","norm",0.9,0.846,0.902,0.87,"500",0.8795,0
+"outpar_perc",30,25,"normal","parametric","perc",0.926,0.872,0.936,0.89,"500",0.906,0
+"outres_perc",30,25,"normal","residual","perc",0.928,0.876,0.918,0.874,"500",0.899,0
+"outpar_basic",30,25,"normal","parametric","basic",0.892,0.816,0.892,0.858,"500",0.8645,0
+"outres_basic",30,25,"normal","residual","basic",0.886,0.816,0.9,0.85,"500",0.863,0

@@ -1,5 +1,14 @@
 .DS_Store
 .Rhistory
+*.Rhistory
 .Rproj.user
 *.Rproj
 May10/
+*_TEST.R
+*_TEST.sh
+appendix*
+graphs_NON6.R
+hox2000.csv
+job_names*
+percf1.png
+500nrep500*

@@ -20,12 +20,12 @@ library(truncnorm)
 library(covsim) # non-normal errors
 
 # Manipulated study conditions
-# C.cond <- c(30, 100, 200) # number of clusters
-# N.cond <- c(6, 25, 70) # cluster size
-# norm.cond <- c("normal", "nonnormal") # error normality
-C.cond <- c(30) # number of clusters
-N.cond <- c(6) # cluster size
-norm.cond <- c("normal", "nonnormal") # error normality
+C.cond <- 200
+N.cond <- 25 # cluster size
+norm.cond <- "normal" # error normality
+
+# name outfile
+outfile <- glue("C{C.cond}N{N.cond}{norm.cond}")
 
 # Fixed conditions
 # data generation
@@ -182,10 +182,10 @@ v  <- popr2s[3, 1]
 m  <- popr2s[4, 1]
 
 # coverage iterations
-nrep <- 10
+nrep <- 200
 
 # bootstrap iterations
-brep <- 5
+brep <- 500
 
 # model
 form <- formula(satisfaction ~ 1 + x1 + x2 + x3 + z1 + z2 + z3 + (1 + x1 + x2 + x3|schoolID))
@@ -236,9 +236,9 @@ create_df <- function(C, N, norm) {
   teachsat[,"teacherID"] <- rep(seq(clustersize), clusters)
   
   #generate predictors
-  teachsat[,"x1"] <- (rnorm(clusters*clustersize, mean=0, sd=1))
-  teachsat[,"x2"] <- (rnorm(clusters*clustersize, mean=0, sd=1))
-  teachsat[,"x3"] <- (rnorm(clusters*clustersize, mean=0, sd=1))
+  teachsat[,"x1"] <- (rnorm(clusters*clustersize, mean=0, sd=sqrt(clustersize/(clustersize - 1))))
+  teachsat[,"x2"] <- (rnorm(clusters*clustersize, mean=0, sd=sqrt(clustersize/(clustersize - 1))))
+  teachsat[,"x3"] <- (rnorm(clusters*clustersize, mean=0, sd=sqrt(clustersize/(clustersize - 1))))
   
   teachsat[,"z1"] <- rep(rnorm(clusters, mean = 0, sd = 1), each=clustersize) #rnorm(clusters, mean = 0, sd = 1) generates 300 numbers from normal distribution, rep() repeats each number 30 times
   teachsat[,"z2"] <- rep(rnorm(clusters, mean = 0, sd = 1), each=clustersize)
@@ -323,8 +323,6 @@ for (C in C.cond) {
         # bootstrap datasets
         mod <- lmer(form, dat, control = lmerControl(optimizer = "bobyqa"))
         
-        # if non-convergence, then add to tally and clear warnings (because we're checking non-convergence by length of warnings())
-        # if the model converged, then we conduct bootstrapping and get confidence intervals
         if (length(warnings()) > 0) {
           nonconvergence = nonconvergence + 1
           print("Nonconvergence added to tally")
@@ -564,7 +562,6 @@ for (C in C.cond) {
       }
       mrp <- mrp/converged_rep
       
-      
       # format outfiles ----
       
       outpar_norm <- c(C, N, norm, "parametric", "norm", f1pn, f2pn, vpn, mpn, converged_rep)
@@ -575,7 +572,6 @@ for (C in C.cond) {
       
       outpar_basic <- c(C, N, norm, "parametric", "basic", f1pb, f2pb, vpb, mpb, converged_rep)
       outres_basic <- c(C, N, norm, "residual", "basic", f1rb, f2rb, vrb, mrb, converged_rep)
-      
       
       # bind to results
       results <- rbind(results, outpar_norm, outres_norm, outpar_perc, outres_perc, outpar_basic, outres_basic)
@@ -597,6 +593,6 @@ results <- results %>%
          mcov = as.numeric(paste(mcov)),
          averagecov = (f1cov + f2cov + vcov + mcov)/4,
          nonconverge_prop = 1 - (as.numeric(paste(converged_reps))/nrep)) # paste required to get numbers from converged_reps as opposed to factor level (which returns 1)
-write.csv(results, "500nrep500brep_results.csv")
+write.csv(results, glue("results/{outfile}.csv"))
 
 tictoc::toc()
